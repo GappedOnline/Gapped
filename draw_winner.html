@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Winner Draw</title>
+  <style>
+    .draw-winner {
+      background-color: #FFFFFF;
+      color: #000000;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 50vh;
+      margin: 0;
+    }
+
+    .draw-h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .draw-button {
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      background-color: #ff3b2e;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: background-color 0.3s ease;
+    }
+
+    .result-container {
+      height: 80px;
+      width: 100%;
+      max-width: 500px;
+      margin-top: 2rem;
+      position: relative;
+    }
+
+    .loading,
+    .winner {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      padding: 1rem;
+      box-sizing: border-box;
+    }
+
+    .loading {
+      font-size: 1.2rem;
+      color: #555;
+      visibility: hidden;
+      opacity: 0;
+    }
+
+    .winner {
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      flex-direction: column;
+      visibility: hidden;
+      opacity: 0;
+    }
+
+    .visible {
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+
+    .spinner {
+      margin-left: 10px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #ff3b2e;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .draw-logo {
+      display: block;
+      margin: 0 auto;
+      margin-top: 30px;
+      width: 20%;
+    }
+  </style>
+</head>
+<body>
+
+<img class="draw-logo" src="https://i.imgur.com/KXtyEN4.png">
+<div class="draw-winner">
+  <h1 class="draw-h1">Click Below to Draw a Winner!</h1>
+  <button class="draw-button" id="drawBtn">Draw Winner</button>
+
+  <div class="result-container">
+    <div id="loading" class="loading">
+      Picking a lucky winner...
+      <div class="spinner"></div>
+    </div>
+    <div id="winnerBox" class="winner"></div>
+  </div>
+</div>
+
+<script>
+  const drawBtn = document.getElementById('drawBtn');
+  const loading = document.getElementById('loading');
+  const winnerBox = document.getElementById('winnerBox');
+
+  drawBtn.addEventListener('click', () => {
+    winnerBox.classList.remove('visible');
+    winnerBox.innerHTML = '';
+    loading.classList.add('visible');
+
+    setTimeout(async () => {
+        try {
+            const response = await fetch('example.csv');
+            const csvText = await response.text();
+            const lines = csvText.trim().split('\n');
+
+            const entries = [];
+            let totalEntries = 0;
+
+            lines.forEach(line => {
+                const parts = line.trim().split(',');
+                if (parts.length === 2) {
+                const email = parts[0].trim();
+                const numEntries = parseInt(parts[1].trim(), 10);
+
+                if (email && !isNaN(numEntries) && numEntries > 0) {
+                    entries.push({ email, weight: numEntries });
+                    totalEntries += numEntries;
+                }
+                }
+            });
+
+            if (totalEntries === 0) throw new Error("No valid entries found.");
+
+            const weightedPool = [];
+            entries.forEach(entry => {
+                for (let i = 0; i < entry.weight; i++) {
+                weightedPool.push(entry.email);
+                }
+            });
+
+            for (let i = weightedPool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [weightedPool[i], weightedPool[j]] = [weightedPool[j], weightedPool[i]];
+            }
+
+            const chosenEmail = weightedPool[Math.floor(Math.random() * weightedPool.length)];
+
+            loading.classList.remove('visible');
+            winnerBox.innerHTML = `<h2>The winner is: <strong>${chosenEmail}</strong> 🎉</h2>`;
+            winnerBox.classList.add('visible');
+
+            } catch (err) {
+            loading.classList.remove('visible');
+            winnerBox.innerHTML = `<h2>Error: ${err.message}</h2>`;
+            winnerBox.classList.add('visible');
+            }
+    }, 1000);
+  });
+</script>
+
+</body>
+</html>
